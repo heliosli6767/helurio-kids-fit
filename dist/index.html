@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="使用 STARTLUX 语音选衣与 Lucy 实时视频生成的儿童智能试衣间。" />
+    <meta name="theme-color" content="#0b1020" />
+    <title>STARTLUX 儿童智能试衣间</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%230b1020'/%3E%3Cpath d='M9 8l4-3h6l4 3 4 2-3 6-3-2v12H11V14l-3 2-3-6z' fill='%23ffd54a'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="STARTLUX 首页">
+          <span class="brand-mark" aria-hidden="true">S</span>
+          <span>
+            <strong>STARTLUX</strong>
+            <small>KIDS FIT STUDIO</small>
+          </span>
+        </a>
+        <div class="top-actions">
+          <span class="system-pill" id="systemState"><i></i> 等待启动</span>
+          <button class="icon-button" id="settingsButton" type="button" aria-label="接口设置" title="接口设置">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21h-4v-.08A1.7 1.7 0 0 0 8.96 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3v-4h.08A1.7 1.7 0 0 0 4.6 8.94a1.7 1.7 0 0 0-.34-1.88L4.2 7l2.83-2.83.06.06a1.7 1.7 0 0 0 1.88.34A1.7 1.7 0 0 0 10 3.01V3h4v.08a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06a1.7 1.7 0 0 0-.34 1.88 1.7 1.7 0 0 0 1.56 1.03H21v4h-.08A1.7 1.7 0 0 0 19.4 15Z"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <section class="studio-panel" aria-label="实时试衣画面">
+          <div class="section-heading">
+            <div>
+              <span class="eyebrow">LIVE MIRROR</span>
+              <h1>说出想穿的颜色</h1>
+            </div>
+            <button class="secondary-button" id="cameraButton" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 10l4.5-2.5v9L15 14M5 6h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z"/></svg>
+              打开摄像头
+            </button>
+          </div>
+
+          <div class="mirror-frame" id="mirrorFrame">
+            <video id="outputVideo" autoplay playsinline muted></video>
+            <video id="inputVideo" autoplay playsinline muted></video>
+            <div class="camera-empty" id="cameraEmpty">
+              <div class="camera-orbit">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 10l4.5-2.5v9L15 14M5 6h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z"/></svg>
+              </div>
+              <strong>镜子还没有打开</strong>
+              <span>允许摄像头后，站在画面中央</span>
+            </div>
+            <div class="live-badge"><i></i> <span id="liveLabel">PREVIEW</span></div>
+            <div class="look-summary" id="lookSummary">
+              <span>当前搭配</span>
+              <strong id="lookText">还没有选择服装</strong>
+            </div>
+          </div>
+
+          <div class="voice-console">
+            <button class="mic-button" id="micButton" type="button" aria-label="开始语音选择">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3M9 21h6"/></svg>
+            </button>
+            <div class="voice-copy">
+              <label for="commandInput">语音选择</label>
+              <input id="commandInput" type="text" autocomplete="off" placeholder="试试说：给我穿黄色上衣和黑色裤子" />
+              <span id="voiceHint">点击麦克风，识别后会自动交给 STARTLUX</span>
+            </div>
+            <button class="send-button" id="sendButton" type="button">应用</button>
+          </div>
+        </section>
+
+        <aside class="wardrobe-panel" aria-label="儿童衣橱">
+          <div class="wardrobe-heading">
+            <div>
+              <span class="eyebrow">WARDROBE · 10 ITEMS</span>
+              <h2>儿童衣橱</h2>
+            </div>
+            <span class="startlux-badge">由 STARTLUX 选择</span>
+          </div>
+          <div class="tabs" role="tablist" aria-label="服装类别">
+            <button class="tab active" type="button" role="tab" aria-selected="true" data-filter="top">上衣 <span>5</span></button>
+            <button class="tab" type="button" role="tab" aria-selected="false" data-filter="bottom">裤装 <span>5</span></button>
+            <button class="tab" type="button" role="tab" aria-selected="false" data-filter="all">全部 <span>10</span></button>
+          </div>
+          <div class="catalog-grid" id="catalogGrid" aria-live="polite"></div>
+          <div class="decision-strip">
+            <div class="decision-icon">S</div>
+            <div>
+              <strong id="decisionTitle">STARTLUX 尚未判断</strong>
+              <span id="decisionDetail">语音指令会发送到本地模型</span>
+            </div>
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <dialog id="settingsDialog">
+      <form method="dialog" class="settings-card" id="settingsForm">
+        <div class="modal-heading">
+          <div><span class="eyebrow">CONNECTIONS</span><h2>接口设置</h2></div>
+          <button class="icon-button" value="cancel" aria-label="关闭设置" type="submit">×</button>
+        </div>
+        <label>STARTLUX 接口地址<input id="startluxEndpoint" type="url" value="http://127.0.0.1:8000/v1/systemone" required /></label>
+        <label>STARTLUX 模型名<input id="startluxModel" type="text" value="startlux" required /></label>
+        <label>Lucy API Key<input id="lucyKey" type="password" placeholder="仅保存在本次浏览器会话" /></label>
+        <p>本地 STARTLUX 需允许浏览器跨域访问。正式上线时，请把 Lucy 密钥换成后端签发的短期会话令牌。</p>
+        <div class="modal-actions">
+          <button class="secondary-button" value="cancel" type="submit">取消</button>
+          <button class="primary-button" id="saveSettings" value="default" type="submit">保存设置</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
