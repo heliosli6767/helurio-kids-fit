@@ -183,10 +183,17 @@ async function applyLucyLook() {
   const reference = await composeOutfitReference();
   const prompt = [state.selected.top?.prompt, state.selected.bottom?.prompt].filter(Boolean).join(" and ");
   try {
-    await state.lucyClient.set({ image: reference, prompt: { text: `Dress the child subject in ${prompt}. Preserve identity, body shape, pose, background and movement.`, enhance: true } });
+    elements.liveLabel.textContent = "LUCY APPLYING";
+    await state.lucyClient.set({
+      image: reference,
+      prompt: `Dress the same person in ${prompt}. Keep the person's identity, face, body shape, pose, camera framing, lighting and background unchanged. Change only the clothing.`
+    });
     elements.liveLabel.textContent = "LUCY LIVE";
     showToast("Lucy 正在更新试衣画面");
-  } catch (error) { showToast(`Lucy 更新失败：${error.message}`); }
+  } catch (error) {
+    elements.liveLabel.textContent = "LUCY ERROR";
+    showToast(`Lucy 更新失败：${error.message}`);
+  }
 }
 
 async function startCamera() {
@@ -205,6 +212,8 @@ async function startCamera() {
 async function connectLucy() {
   try {
     elements.liveLabel.textContent = "LUCY CONNECTING";
+    elements.outputVideo.style.display = "none";
+    elements.outputVideo.srcObject = null;
     const { createDecartClient, models } = await import("https://esm.sh/@decartai/sdk?bundle");
     const model = models.realtime("lucy-vton-3.5");
     const client = createDecartClient({ apiKey: state.settings.lucyKey });
@@ -214,13 +223,15 @@ async function connectLucy() {
       onRemoteStream: (stream) => {
         elements.outputVideo.srcObject = stream;
         elements.outputVideo.style.display = "block";
+        elements.inputVideo.style.display = "none";
         elements.liveLabel.textContent = "LUCY LIVE";
-      },
-      initialState: { prompt: { text: "Preserve the subject, pose, background and current clothing.", enhance: true } }
+      }
     });
     if (state.selected.top || state.selected.bottom) await applyLucyLook();
   } catch (error) {
     state.lucyClient = null;
+    elements.inputVideo.style.display = "block";
+    elements.outputVideo.style.display = "none";
     elements.liveLabel.textContent = "CAMERA PREVIEW";
     showToast(`Lucy 连接失败：${error.message}`);
   }
@@ -398,10 +409,15 @@ elements.settingsButton.addEventListener("click", () => {
 elements.settingsForm.addEventListener("submit", event => {
   if (event.submitter?.value === "cancel") return;
   event.preventDefault();
+  const previousLucyKey = state.settings.lucyKey;
   state.settings = { startluxEndpoint: elements.endpoint.value.trim(), startluxModel: elements.model.value.trim(), speechEndpoint: elements.speechEndpoint.value.trim(), lucyKey: elements.lucyKey.value.trim() };
   Object.entries(state.settings).forEach(([key, value]) => sessionStorage.setItem(key, value));
   elements.settingsDialog.close();
   showToast("接口设置已保存");
+  if (previousLucyKey !== state.settings.lucyKey && state.lucyClient) {
+    state.lucyClient.disconnect?.();
+    state.lucyClient = null;
+  }
   if (state.cameraStream && state.settings.lucyKey && !state.lucyClient) connectLucy();
 });
 
