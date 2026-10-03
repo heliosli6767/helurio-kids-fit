@@ -3,22 +3,22 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="使用 STARTLUX 语音选衣与 Lucy 实时视频生成的儿童智能试衣间。" />
-    <meta name="theme-color" content="#0b1020" />
-    <title>STARTLUX 儿童智能试衣间</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%230b1020'/%3E%3Cpath d='M9 8l4-3h6l4 3 4 2-3 6-3-2v12H11V14l-3 2-3-6z' fill='%23ffd54a'/%3E%3C/svg%3E" />
+    <meta name="description" content="HELURIO Kids Fit Studio — 语音控制的儿童智能试衣间。" />
+    <meta name="theme-color" content="#f2efe8" />
+    <title>HELURIO Kids Fit Studio</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='16' fill='%23181513'/%3E%3Cpath d='M10 8h3v6h6V8h3v16h-3v-7h-6v7h-3z' fill='%23f5f1e8'/%3E%3C/svg%3E" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600&family=Playfair+Display:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <div class="app-shell">
       <header class="topbar">
-        <a class="brand" href="#" aria-label="STARTLUX 首页">
-          <span class="brand-mark" aria-hidden="true">S</span>
+        <a class="brand" href="#" aria-label="HELURIO 首页">
+          <span class="brand-mark" aria-hidden="true">H</span>
           <span>
-            <strong>STARTLUX</strong>
+            <strong>HELURIO</strong>
             <small>KIDS FIT STUDIO</small>
           </span>
         </a>
@@ -34,8 +34,8 @@
         <section class="studio-panel" aria-label="实时试衣画面">
           <div class="section-heading">
             <div>
-              <span class="eyebrow">LIVE MIRROR</span>
-              <h1>说出想穿的颜色</h1>
+              <span class="eyebrow">HELURIO MIRROR · 01</span>
+              <h1>试穿，从一句话开始</h1>
             </div>
             <button class="secondary-button" id="cameraButton" type="button">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 10l4.5-2.5v9L15 14M5 6h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z"/></svg>
@@ -67,7 +67,7 @@
             <div class="voice-copy">
               <label for="commandInput">语音选择</label>
               <input id="commandInput" type="text" autocomplete="off" placeholder="试试说：给我穿黄色上衣和黑色裤子" />
-              <span id="voiceHint">点击麦克风，识别后会自动交给 STARTLUX</span>
+              <span id="voiceHint">点击麦克风，说出颜色与款式</span>
             </div>
             <button class="send-button" id="sendButton" type="button">应用</button>
           </div>
@@ -76,8 +76,8 @@
         <aside class="wardrobe-panel" aria-label="儿童衣橱">
           <div class="wardrobe-heading">
             <div>
-              <span class="eyebrow">WARDROBE · 10 ITEMS</span>
-              <h2>儿童衣橱</h2>
+              <span class="eyebrow">THE JUNIOR WARDROBE · 10</span>
+              <h2>本季衣橱</h2>
             </div>
             <span class="startlux-badge">由 STARTLUX 选择</span>
           </div>
@@ -106,8 +106,9 @@
         </div>
         <label>STARTLUX 接口地址<input id="startluxEndpoint" type="url" value="http://127.0.0.1:8000/v1/systemone" required /></label>
         <label>STARTLUX 模型名<input id="startluxModel" type="text" value="startlux" required /></label>
+        <label>本地语音转写接口<input id="speechEndpoint" type="url" value="http://127.0.0.1:8001/v1/audio/transcriptions" /></label>
         <label>Lucy API Key<input id="lucyKey" type="password" placeholder="仅保存在本次浏览器会话" /></label>
-        <p>本地 STARTLUX 需允许浏览器跨域访问。正式上线时，请把 Lucy 密钥换成后端签发的短期会话令牌。</p>
+        <p>浏览器原生语音不可用时，会把录音发送到本地 OpenAI-compatible 转写接口。STARTLUX 与转写服务都需允许页面来源的 CORS 请求。</p>
         <div class="modal-actions">
           <button class="secondary-button" value="cancel" type="submit">取消</button>
           <button class="primary-button" id="saveSettings" value="default" type="submit">保存设置</button>

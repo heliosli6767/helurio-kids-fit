@@ -17,9 +17,15 @@ const state = {
   cameraStream: null,
   lucyClient: null,
   recognition: null,
+  recorder: null,
+  recordingStream: null,
+  recordingChunks: [],
+  recordingTimer: null,
+  speechResultReceived: false,
   settings: {
     startluxEndpoint: sessionStorage.getItem("startluxEndpoint") || "http://127.0.0.1:8000/v1/systemone",
     startluxModel: sessionStorage.getItem("startluxModel") || "startlux",
+    speechEndpoint: sessionStorage.getItem("speechEndpoint") || "http://127.0.0.1:8001/v1/audio/transcriptions",
     lucyKey: sessionStorage.getItem("lucyKey") || ""
   },
   lastDecision: { ok: false, error: "尚未调用 STARTLUX" }
@@ -30,7 +36,7 @@ const elements = {
   grid: $("#catalogGrid"), input: $("#commandInput"), mic: $("#micButton"), send: $("#sendButton"),
   camera: $("#cameraButton"), inputVideo: $("#inputVideo"), outputVideo: $("#outputVideo"), cameraEmpty: $("#cameraEmpty"),
   settingsButton: $("#settingsButton"), settingsDialog: $("#settingsDialog"), settingsForm: $("#settingsForm"),
-  endpoint: $("#startluxEndpoint"), model: $("#startluxModel"), lucyKey: $("#lucyKey"),
+  endpoint: $("#startluxEndpoint"), model: $("#startluxModel"), speechEndpoint: $("#speechEndpoint"), lucyKey: $("#lucyKey"),
   systemState: $("#systemState"), liveLabel: $("#liveLabel"), voiceHint: $("#voiceHint"),
   decisionTitle: $("#decisionTitle"), decisionDetail: $("#decisionDetail"), lookText: $("#lookText"), toast: $("#toast")
 };
@@ -189,22 +195,116 @@ async function connectLucy() {
 function setupVoice() {
   const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!Recognition) {
-    elements.voiceHint.textContent = "当前浏览器不支持语音识别，可输入文字后点击应用";
-    elements.mic.disabled = true;
+    elements.voiceHint.textContent = "点击麦克风开始录音，再次点击可立即结束";
     return;
   }
   state.recognition = new Recognition();
   state.recognition.lang = "zh-CN";
   state.recognition.interimResults = false;
   state.recognition.continuous = false;
-  state.recognition.onstart = () => { elements.mic.classList.add("listening"); elements.voiceHint.textContent = "正在听，请说出颜色和服装…"; };
-  state.recognition.onend = () => elements.mic.classList.remove("listening");
-  state.recognition.onerror = event => { elements.voiceHint.textContent = `语音识别失败：${event.error}`; };
+  state.recognition.onstart = () => {
+    state.speechResultReceived = false;
+    elements.mic.classList.add("listening");
+    elements.voiceHint.textContent = "正在听，请说出颜色和服装…";
+  };
+  state.recognition.onend = () => {
+    if (state.recorder?.state !== "recording") elements.mic.classList.remove("listening");
+    if (!state.speechResultReceived && state.recorder?.state !== "recording" && !elements.voiceHint.textContent.includes("失败")) {
+      elements.voiceHint.textContent = "没有听清，请靠近麦克风再试一次";
+    }
+  };
+  state.recognition.onerror = event => {
+    elements.mic.classList.remove("listening");
+    if (["network", "service-not-allowed", "language-not-supported"].includes(event.error)) {
+      elements.voiceHint.textContent = "浏览器识别不可用，正在切换本地录音…";
+      startRecordingFallback();
+    } else {
+      elements.voiceHint.textContent = `语音识别失败：${event.error}`;
+    }
+  };
   state.recognition.onresult = event => {
+    state.speechResultReceived = true;
     const transcript = event.results[0][0].transcript;
     elements.input.value = transcript;
     decideWithStartlux(transcript);
   };
+}
+
+async function startVoiceInput() {
+  if (state.recorder?.state === "recording") {
+    state.recorder.stop();
+    return;
+  }
+  try {
+    elements.voiceHint.textContent = "正在请求麦克风权限…";
+    const permissionStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    permissionStream.getTracks().forEach(track => track.stop());
+    if (state.recognition) {
+      try {
+        state.recognition.start();
+        return;
+      } catch (error) {
+        if (error.name === "InvalidStateError") return;
+      }
+    }
+    await startRecordingFallback();
+  } catch (error) {
+    elements.voiceHint.textContent = error.name === "NotAllowedError"
+      ? "请允许麦克风权限后再次点击"
+      : `无法打开麦克风：${error.message}`;
+    showToast(elements.voiceHint.textContent);
+  }
+}
+
+async function startRecordingFallback() {
+  if (!window.MediaRecorder || !navigator.mediaDevices?.getUserMedia) {
+    elements.voiceHint.textContent = "此浏览器无法录音，请使用文字输入";
+    return;
+  }
+  try {
+    state.recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    state.recordingChunks = [];
+    const preferredType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "";
+    state.recorder = new MediaRecorder(state.recordingStream, preferredType ? { mimeType: preferredType } : undefined);
+    state.recorder.ondataavailable = event => { if (event.data.size) state.recordingChunks.push(event.data); };
+    state.recorder.onstop = transcribeRecording;
+    state.recorder.start();
+    elements.mic.classList.add("listening");
+    elements.voiceHint.textContent = "正在录音；再次点击结束，或等待 7 秒";
+    clearTimeout(state.recordingTimer);
+    state.recordingTimer = setTimeout(() => { if (state.recorder?.state === "recording") state.recorder.stop(); }, 7000);
+  } catch (error) {
+    elements.voiceHint.textContent = `无法开始录音：${error.message}`;
+  }
+}
+
+async function transcribeRecording() {
+  clearTimeout(state.recordingTimer);
+  elements.mic.classList.remove("listening");
+  state.recordingStream?.getTracks().forEach(track => track.stop());
+  const type = state.recorder?.mimeType || "audio/webm";
+  const blob = new Blob(state.recordingChunks, { type });
+  if (!blob.size) { elements.voiceHint.textContent = "没有录到声音，请重试"; return; }
+  elements.voiceHint.textContent = "正在本地转写语音…";
+  try {
+    const form = new FormData();
+    form.append("file", new File([blob], "helurio-command.webm", { type }));
+    form.append("model", "whisper-1");
+    form.append("language", "zh");
+    const response = await fetch(state.settings.speechEndpoint, { method: "POST", body: form });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const result = await response.json();
+    const transcript = result.text || result.transcript;
+    if (!transcript) throw new Error("转写接口没有返回 text");
+    elements.input.value = transcript;
+    await decideWithStartlux(transcript);
+  } catch (error) {
+    elements.voiceHint.textContent = "本地转写失败，请检查语音接口设置";
+    showToast(`语音转写：${error.message}`);
+  } finally {
+    state.recorder = null;
+    state.recordingStream = null;
+  }
 }
 
 document.querySelectorAll(".tab").forEach(tab => tab.addEventListener("click", () => {
@@ -213,18 +313,19 @@ document.querySelectorAll(".tab").forEach(tab => tab.addEventListener("click", (
 }));
 elements.send.addEventListener("click", () => decideWithStartlux(elements.input.value));
 elements.input.addEventListener("keydown", event => { if (event.key === "Enter") decideWithStartlux(elements.input.value); });
-elements.mic.addEventListener("click", () => state.recognition?.start());
+elements.mic.addEventListener("click", startVoiceInput);
 elements.camera.addEventListener("click", startCamera);
 elements.settingsButton.addEventListener("click", () => {
   elements.endpoint.value = state.settings.startluxEndpoint;
   elements.model.value = state.settings.startluxModel;
+  elements.speechEndpoint.value = state.settings.speechEndpoint;
   elements.lucyKey.value = state.settings.lucyKey;
   elements.settingsDialog.showModal();
 });
 elements.settingsForm.addEventListener("submit", event => {
   if (event.submitter?.value === "cancel") return;
   event.preventDefault();
-  state.settings = { startluxEndpoint: elements.endpoint.value.trim(), startluxModel: elements.model.value.trim(), lucyKey: elements.lucyKey.value.trim() };
+  state.settings = { startluxEndpoint: elements.endpoint.value.trim(), startluxModel: elements.model.value.trim(), speechEndpoint: elements.speechEndpoint.value.trim(), lucyKey: elements.lucyKey.value.trim() };
   Object.entries(state.settings).forEach(([key, value]) => sessionStorage.setItem(key, value));
   elements.settingsDialog.close();
   showToast("接口设置已保存");
@@ -254,4 +355,5 @@ setupVoice();
 registerWebMCP();
 elements.endpoint.value = state.settings.startluxEndpoint;
 elements.model.value = state.settings.startluxModel;
+elements.speechEndpoint.value = state.settings.speechEndpoint;
 elements.lucyKey.value = state.settings.lucyKey;

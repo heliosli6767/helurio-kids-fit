@@ -1,8 +1,8 @@
-# STARTLUX Kids Fit Studio
+# HELURIO Kids Fit Studio
 
 一个浏览器端儿童虚拟试衣原型：
 
-- 浏览器语音识别把中文指令转成文本。
+- 优先使用浏览器语音识别；不可用时自动录音并调用本地 OpenAI-compatible 转写接口。
 - 本地 STARTLUX 兼容 `/v1/systemone` 的 Choice 接口，从 5 件上衣和 5 条裤装中选择标签。
 - Lucy Virtual Try-On 3.5 接收摄像头流、服装参考图和组合提示词，返回实时试衣视频。
 - 不使用 Jev；手动点击只用于测试衣橱，所有自然语言判断都发送给 STARTLUX。
