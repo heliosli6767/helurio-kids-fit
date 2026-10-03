@@ -12,7 +12,7 @@ const wardrobe = [
 ];
 
 const state = {
-  filter: "top",
+  filter: "all",
   selected: { top: null, bottom: null },
   cameraStream: null,
   lucyClient: null,
@@ -42,7 +42,7 @@ const elements = {
 };
 
 function renderWardrobe() {
-  const visible = wardrobe.filter(item => state.filter === "all" || item.type === state.filter);
+  const visible = wardrobe;
   elements.grid.innerHTML = visible.map(item => `
     <button class="garment-card ${state.selected[item.type]?.id === item.id ? "selected" : ""}" type="button" data-id="${item.id}" aria-label="试穿${item.name}">
       <span class="item-id">${item.id}</span><span class="checkmark">✓</span>
@@ -307,10 +307,6 @@ async function transcribeRecording() {
   }
 }
 
-document.querySelectorAll(".tab").forEach(tab => tab.addEventListener("click", () => {
-  document.querySelectorAll(".tab").forEach(t => { t.classList.toggle("active", t === tab); t.setAttribute("aria-selected", t === tab ? "true" : "false"); });
-  state.filter = tab.dataset.filter; renderWardrobe();
-}));
 elements.send.addEventListener("click", () => decideWithStartlux(elements.input.value));
 elements.input.addEventListener("keydown", event => { if (event.key === "Enter") decideWithStartlux(elements.input.value); });
 elements.mic.addEventListener("click", startVoiceInput);
