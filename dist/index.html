@@ -58,13 +58,13 @@
           </div>
 
           <div class="voice-console">
-            <button class="mic-button" id="micButton" type="button" aria-label="开始语音选择">
+            <button class="mic-button" id="micButton" type="button" aria-label="开始连续语音选择" title="开始聆听">
               <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3M9 21h6"/></svg>
             </button>
             <div class="voice-copy">
               <label for="commandInput">语音选择</label>
               <input id="commandInput" type="text" autocomplete="off" placeholder="试试说：给我穿黄色上衣和黑色裤子" />
-              <span id="voiceHint">点击麦克风，说出颜色与款式</span>
+              <span id="voiceHint">点击一次开始连续聆听，再次点击停止</span>
             </div>
             <button class="send-button" id="sendButton" type="button">应用</button>
           </div>
