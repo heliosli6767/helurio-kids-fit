@@ -2,6 +2,10 @@
 
 A voice-controlled virtual try-on prototype powered by a local decision model and Lucy VTON.
 
+## Demo
+
+[▶ Watch the HELURIO demo video](./Helurio-demo-change%20cloths.mp4)
+
 ## How it works
 
 1. Browser speech recognition turns a clothing request into text.
